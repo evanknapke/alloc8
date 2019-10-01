@@ -1,19 +1,21 @@
-Write-up for alloc8: untethered bootrom exploit for iPhone 3GS
+# alloc8
+
+An untethered bootrom exploit for iPhone 3GS
 
 alloc8 brings freedom to millions of iPhone 3GS devices, forever, by exploiting a powerful vulnerability in function malloc in the bootrom. Both revisions of iPhone 3GS bootrom are vulnerable, but old bootrom is also vulnerable to 24Kpwn, which is faster than alloc8.
 
 
-*** JAILBREAK TOOL ***
+## Jailbreak Tool
 ipwndfu:
 https://github.com/axi0mX/ipwndfu
 
 
-*** AFFECTED DEVICES ***
+## Affected Devices
 iPhone 3GS (old bootrom)
 iPhone 3GS (new bootrom)
 
 
-*** VULNERABILITY ***
+## Vulnerability
 
 This is not a typical heap bug. This is a bug in implementation of the heap itself.
 
@@ -32,7 +34,7 @@ if (pointer == NULL) {
 In S5L8920 bootrom (and some very old versions of iBoot) function malloc is not implemented correctly. When it is unable to allocate memory, instead of NULL it returns a pointer to memory address 0x8. Callers check if returned pointer is NULL and then treat that pointer as valid.
 
 
-*** EXPLOITATION ***
+## Exploitation
 
 First, we must be able to allocate enough data on the heap to make it run out of memory. Apple seems to have done a good job in reducing the attack surface of the bootrom, and it is far from certain that this can be achieved.
 
@@ -53,12 +55,12 @@ This gives us the ability to write arbitrary data over data in the exception vec
 Once reading from NOR is complete, bootrom attempts to free the temporary buffer at memory address 0x8. 8 bytes located immediately before allocated memory are used for heap metadata, but for this bad pointer the metadata is invalid. This leads to a bad memory access in function free, which triggers a data abort exception and the processor jumps to our shellcode.
 
 
-*** SHELLCODE ***
+## Shellcode
 
 First 52 bytes of NOR contain an IMG2 header with NOR metadata that should not be changed. Before bootrom starts parsing images in NOR, the first 512 bytes of NOR are copied to memory allocated on the heap, but only 52 bytes are actually used. The remaining 460 bytes are unused and can be safely used for shellcode. Memory address where this data gets allocated is always the same.
 
 
-*** POST-EXPLOITATION ***
+## Post-Exploitation
 
 To clean up, shellcode returns from exception, sets a new stack top, restores the original pointer for data abort handler, and frees 44-byte structures which are occupying most of the heap, leaving only the one required for normal boot, LLB.
 
